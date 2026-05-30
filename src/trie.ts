@@ -1,5 +1,5 @@
 // =============================================================================
-//  src/trie.js  ―  Trie（トライ木）による prefix（前方一致）検索エンジン
+//  src/trie.ts  ―  Trie（トライ木）による prefix（前方一致）検索エンジン
 // =============================================================================
 //
 //  ■ Trie（トライ木）とは？
@@ -29,39 +29,44 @@
 //
 // =============================================================================
 
+import type { Suggestion } from './types';
+
 /**
  * Trie の 1 ノード。
  * 木の中の「ある1文字までの経路（= ある prefix）」を表します。
+ *
+ * TypeScript ではフィールドの型を宣言時に書きます。これにより、
+ * 例えば children に間違って配列を入れる、といったミスを防げます。
  */
 class TrieNode {
-  constructor() {
-    // children: 「次の1文字」-> 子ノード への対応表。
-    //   例) root.children.get('t') で "t" の子ノードが取れる。
-    this.children = new Map();
+  // children: 「次の1文字」-> 子ノード への対応表。
+  //   例) root.children.get('t') で "t" の子ノードが取れる。
+  children: Map<string, TrieNode> = new Map();
 
-    // isWord: このノードでちょうど単語が終わるなら true。
-    //   "to" の途中ノードは false、"toyota" の終端ノードは true。
-    this.isWord = false;
+  // isWord: このノードでちょうど単語が終わるなら true。
+  //   "to" の途中ノードは false、"toyota" の終端ノードは true。
+  isWord = false;
 
-    // term / score: このノードが単語の終端のとき、その単語と重み（スコア）。
-    this.term = null;
-    this.score = 0;
+  // term / score: このノードが単語の終端のとき、その単語と重み（スコア）。
+  //   終端でなければ term は null。
+  term: string | null = null;
+  score = 0;
 
-    // topCandidates: このノードを prefix に持つ単語の「score 上位リスト」。
-    //   要素は { term, score } の形。score 降順で並べてある。
-    //   suggest のときはここをそのまま返すだけなので速い。
-    this.topCandidates = [];
-  }
+  // topCandidates: このノードを prefix に持つ単語の「score 上位リスト」。
+  //   score 降順で並べてある。suggest のときはここをそのまま返すだけなので速い。
+  topCandidates: Suggestion[] = [];
 }
 
 export class Trie {
+  private readonly root = new TrieNode();
+  private readonly maxCandidatesPerNode: number;
+
   /**
-   * @param {number} maxCandidatesPerNode 各ノードが保持する上位候補の最大数。
+   * @param maxCandidatesPerNode 各ノードが保持する上位候補の最大数。
    *   小さいほどメモリ節約だが、limit が大きいリクエストに応えられなくなる。
    *   学習用なのでデフォルト 10。
    */
   constructor(maxCandidatesPerNode = 10) {
-    this.root = new TrieNode();
     this.maxCandidatesPerNode = maxCandidatesPerNode;
   }
 
@@ -74,30 +79,28 @@ export class Trie {
    *   3. 降りる「すべての prefix ノード」で topCandidates を更新する。
    *      → これにより、後で suggest するとき DFS せずに済む。
    *   4. 最後のノードに単語情報（isWord/term/score）を記録する。
-   *
-   * @param {string} term  単語
-   * @param {number} score 重み（大きいほど上位に出る）
    */
-  insert(term, score) {
-    if (typeof term !== 'string') return;
+  insert(term: string, score: number): void {
     const normalized = term.trim().toLowerCase();
     if (normalized === '') return;
     const safeScore = Number.isFinite(score) ? score : 0;
 
     // root は「空 prefix（= 何も入力していない状態）」を表すノード。
     // ここにも候補を入れておくと、空入力時に「全体の人気上位」を返せる。
-    this._updateTopCandidates(this.root, normalized, safeScore);
+    this.updateTopCandidates(this.root, normalized, safeScore);
 
     let node = this.root;
     for (const char of normalized) {
-      // 子ノードが無ければ新規作成
-      if (!node.children.has(char)) {
-        node.children.set(char, new TrieNode());
+      // 子ノードが無ければ新規作成（Map.get は無いとき undefined を返す）
+      let child = node.children.get(char);
+      if (!child) {
+        child = new TrieNode();
+        node.children.set(char, child);
       }
-      node = node.children.get(char);
+      node = child;
 
       // この prefix ノードの上位候補にもこの単語を反映
-      this._updateTopCandidates(node, normalized, safeScore);
+      this.updateTopCandidates(node, normalized, safeScore);
     }
 
     // たどり着いた終端ノードに単語そのものを記録
@@ -115,13 +118,9 @@ export class Trie {
    *   3. 途中で文字が見つからなければ「該当なし」で空配列を返す。
    *   4. たどり着いたノードには既に上位候補が並んでいるので、
    *      その先頭から limit 件を返すだけ。（DFS 不要 = 速い）
-   *
-   * @param {string} prefix 入力中の文字列
-   * @param {number} limit  返す最大件数
-   * @returns {{term: string, score: number}[]}
    */
-  suggest(prefix, limit = 10) {
-    const normalized = (prefix ?? '').trim().toLowerCase();
+  suggest(prefix: string, limit = 10): Suggestion[] {
+    const normalized = prefix.trim().toLowerCase();
 
     // prefix の文字数ぶんだけ下へたどる
     let node = this.root;
@@ -144,9 +143,9 @@ export class Trie {
   /**
    * あるノードの topCandidates を「term を score 付きで反映 → 降順整列 → 上限で切り詰め」する。
    * 挿入時に通過する各 prefix ノードで呼ばれる内部メソッド。
-   * （メソッド名の先頭の _ は「内部用」という慣習的な目印）
+   * （private ＝ クラスの外からは呼べない内部用、という TypeScript の印）
    */
-  _updateTopCandidates(node, term, score) {
+  private updateTopCandidates(node: TrieNode, term: string, score: number): void {
     // 既に同じ term があればスコアだけ更新、無ければ新規追加
     const existing = node.topCandidates.find((c) => c.term === term);
     if (existing) {
