@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Suggest Lab</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <h1>🔎 Mini Suggest Lab</h1>
+        <p class="subtitle">
+          AJAX と WebSocket、2 つの通信方式でオートコンプリートを比較する学習用デモ。<br />
+          検索ロジック（Trie）はどちらのモードでも共通です。
+        </p>
+      </header>
+
+      <!-- モード切替タブ -->
+      <div class="tabs" role="tablist" aria-label="通信モード切替">
+        <button id="tab-http" class="tab is-active" data-mode="http" role="tab">
+          AJAX (HTTP) モード
+        </button>
+        <button id="tab-ws" class="tab" data-mode="websocket" role="tab">
+          WebSocket モード
+        </button>
+      </div>
+
+      <!-- 検索ボックス + 候補リスト -->
+      <div class="search-area">
+        <input
+          id="search-input"
+          class="search-input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="例: tok / java / web / py / re ..."
+        />
+        <ul id="suggestions" class="suggestions" aria-label="候補一覧"></ul>
+      </div>
+
+      <!-- デバッグ表示 -->
+      <section class="panel debug">
+        <h2>デバッグ情報</h2>
+        <dl class="debug-grid">
+          <dt>現在のモード</dt>
+          <dd id="dbg-mode">http</dd>
+          <dt>最新クエリ</dt>
+          <dd id="dbg-query">(なし)</dd>
+          <dt>requestId</dt>
+          <dd id="dbg-request-id">-</dd>
+          <dt>応答の transport</dt>
+          <dd id="dbg-transport">-</dd>
+          <dt>WebSocket 状態</dt>
+          <dd id="dbg-ws-status">未接続</dd>
+          <dt>候補件数</dt>
+          <dd id="dbg-count">0</dd>
+        </dl>
+      </section>
+
+      <!-- 解説 -->
+      <section class="panel explain">
+        <h2>AJAX と WebSocket の違い（このプロジェクトでの整理）</h2>
+
+        <h3>共通している部分</h3>
+        <ul>
+          <li>入力は <strong>200ms デバウンス</strong>してから送る（打鍵ごとに送らない）。</li>
+          <li>サーバ側は同じ <code>Trie</code> で検索する（<code>getSuggestions()</code> を呼ぶ）。</li>
+          <li>古い応答は <code>requestId</code> で判定して捨てる（stale 対策）。</li>
+        </ul>
+
+        <h3>AJAX (HTTP) モード</h3>
+        <ul>
+          <li>1 入力ごとに <code>GET /api/suggest?q=...</code> を送る。</li>
+          <li>リクエストのたびに接続を用意し、応答が返ると閉じる（毎回 1 往復）。</li>
+          <li>シンプルで、サーバの負荷分散やキャッシュとも相性がよい。</li>
+          <li>オートコンプリートでは一般にこれで十分自然。</li>
+        </ul>
+
+        <h3>WebSocket モード</h3>
+        <ul>
+          <li>ページ読み込み時に <strong>1 本の接続</strong>を張りっぱなしにする。</li>
+          <li>以降は同じ接続でメッセージ（JSON）を送受信する。</li>
+          <li>毎回の接続確立コストが無く、双方向にサーバから push もできる。</li>
+          <li>チャットや株価のような「サーバ発の更新が多い」用途で本領を発揮する。</li>
+          <li>このデモでは“同じ検索を別の運び方で行う”実験として使っている。</li>
+        </ul>
+
+        <p class="note">
+          ポイント：オートコンプリートは「ユーザーが打つ → サーバが返す」の一方向リクエストなので、
+          本来は AJAX が素直です。WebSocket はここでは<strong>仕組みを体感するための学習用</strong>として並べています。
+        </p>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
