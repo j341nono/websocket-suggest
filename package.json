@@ -1,0 +1,19 @@
+{
+  "name": "mini-suggest-lab",
+  "version": "1.0.0",
+  "description": "AJAX と WebSocket の autocomplete を同じバックエンドで比較する学習用プロジェクト",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js",
+    "aggregate": "node scripts/aggregate-clicks.js",
+    "rebuild": "node scripts/rebuild-trie-data.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}
