@@ -5,6 +5,8 @@
 同じバックエンド検索ロジック（Trie）を使って、**AJAX（HTTP）** と **WebSocket** の 2 つの通信方式を切り替えられます。
 「検索の中身は同じで、運び方だけ違う」を体感するのが目的です。
 
+実装は **TypeScript** で、サーバ／スクリプトは [`tsx`](https://github.com/privatenumber/tsx) で `.ts` を直接実行し、ブラウザ用コードは `tsc` で `public/app.js` にコンパイルします。
+
 > 読みやすさ・シンプルな構成・教育的なコメントを最優先にしています。本番運用向けの複雑さはあえて省いています。
 
 ---
@@ -21,9 +23,10 @@
 8. [なぜ WebSocket を学習で並べるのか](#なぜ-websocket-を学習で並べるのか)
 9. [クリックログとは](#クリックログとは)
 10. [集計スクリプトとは](#集計スクリプトとは)
-11. [実サービスとの対応](#実サービスとの対応)
-12. [プロジェクト構成](#プロジェクト構成)
-13. [最初に読むと良いファイル](#最初に読むと良いファイル)
+11. [TypeScript 構成について](#typescript-構成について)
+12. [実サービスとの対応](#実サービスとの対応)
+13. [プロジェクト構成](#プロジェクト構成)
+14. [最初に読むと良いファイル](#最初に読むと良いファイル)
 
 ---
 
@@ -41,10 +44,11 @@
 必要なもの: Node.js 18 以上（推奨 v20+）。
 
 ```bash
-# 1. 依存パッケージをインストール
+# 1. 依存パッケージをインストール（TypeScript / tsx / 型定義も入る）
 npm install
 
 # 2. サーバを起動（http://localhost:3000）
+#    内部で「ブラウザ用 TS のコンパイル → tsx でサーバ起動」を行う
 npm run dev
 
 # 3. クリックログを集計（data/aggregated-scores.json を生成）
@@ -55,6 +59,13 @@ npm run rebuild
 ```
 
 起動したらブラウザで **http://localhost:3000** を開きます。
+
+その他のコマンド:
+
+```bash
+npm run typecheck     # 型チェックだけ実行（コードは出力しない）
+npm run build:client  # client/app.ts -> public/app.js のコンパイルだけ実行
+```
 
 ### 集計後の新しいスコアでサーバを動かす
 
@@ -140,7 +151,7 @@ PORT=4000 npm run dev
 
 5. フロントは応答の `requestId` を見て、**いま画面に出ているものより古ければ無視**します（stale 対策）。
 
-該当コード: `src/server.js` の `wss.on('connection', ...)`、`public/app.js` の `connectWebSocket()` / `sendWs()` / `handleResults()`。
+該当コード: `src/server.ts` の `wss.on('connection', ...)`、`client/app.ts` の `connectWebSocket()` / `sendWs()` / `handleResults()`。
 
 ### stale（古い応答）対策とは
 
@@ -153,14 +164,15 @@ AJAX モードでも同じ通し番号を共有し、同じロジックで判定
 
 ## Trie 検索の仕組み
 
-`src/trie.js` に**自前実装**しています。コメントを多めに付けているので、まずここを読むのがおすすめです。
+`src/trie.ts` に**自前実装**しています。コメントを多めに付けているので、まずここを読むのがおすすめです。
+やり取りするデータの型（`Suggestion` など）は `src/types.ts` にまとめています。
 
 - **Trie ノード**: 「ある1文字までの経路（= ある prefix）」を表す点。`children`（次の文字への枝）、`isWord`（ここで単語が終わるか）、`term`/`score`（終端なら単語と重み）、`topCandidates`（上位候補のキャッシュ）を持ちます。
 - **なぜ prefix 検索に強い?**: `tok` と打てば `root → t → o → k` と**入力文字数ぶんだけ**たどれば候補の入口に着きます。全単語を走査しません。
 - **挿入 (`insert`)**: 単語の文字を1つずつ下りながらノードを作り、**通過する各 prefix ノードの `topCandidates` を更新**します。
 - **prefix 探索 (`suggest`)**: prefix の文字数ぶん下り、着いたノードの `topCandidates` から `limit` 件返すだけ。**毎回 DFS（深さ優先で全部集める）をしないので速い**のがポイントです。
 
-```js
+```ts
 const trie = new Trie();
 trie.insert("tokyo", 100);
 trie.insert("tokyo station", 90);
@@ -209,7 +221,7 @@ POST /api/click
 { "term": "tokyo", "query": "tok", "transport": "http" }
 ```
 
-サーバはこれを `data/click-logs.json` に**追記**します（`src/logService.js`）。
+サーバはこれを `data/click-logs.json` に**追記**します（`src/logService.ts`）。
 これは実サービスの「ユーザー行動ログを集める」工程のミニチュアです。
 
 > サンプルとして最初から数件のログが入っています。自由に消したり、UI から増やしたりして構いません。
@@ -220,7 +232,7 @@ POST /api/click
 
 「ログを溜める → 集計する → 辞書に反映する」という流れを 2 つのスクリプトで再現します。
 
-### `npm run aggregate`（`scripts/aggregate-clicks.js`）
+### `npm run aggregate`（`scripts/aggregate-clicks.ts`）
 
 - `data/click-logs.json`（行動ログ）と `data/words.json`（元の重み）を読みます。
 - term ごとのクリック数を数え、`newScore = baseScore + クリック数 × 重み` を計算します。
@@ -235,7 +247,7 @@ POST /api/click
 
 > スコアの決め方はわざと単純です。実際は CTR（表示に対するクリック率）、表示位置バイアス、新しさ（時間減衰）などを使います。`CLICK_WEIGHT` を変えると挙動が変わります。
 
-### `npm run rebuild`（`scripts/rebuild-trie-data.js`）
+### `npm run rebuild`（`scripts/rebuild-trie-data.ts`）
 
 - `data/words.json`（元辞書）と `data/aggregated-scores.json`（集計結果）を読みます。
 - 集計で更新された term は新スコアで上書き、それ以外は元のまま、にして
@@ -245,17 +257,33 @@ POST /api/click
 
 ---
 
+## TypeScript 構成について
+
+このプロジェクトは「サーバ側」と「ブラウザ側」で実行のされ方が違うため、TypeScript の設定ファイルを 2 つに分けています。
+
+| 対象 | 実行方法 | 設定ファイル | 型ライブラリ |
+| --- | --- | --- | --- |
+| サーバ・スクリプト（`src/`, `scripts/`） | `tsx` で `.ts` を**直接実行**（コンパイル不要） | `tsconfig.json` | Node.js |
+| ブラウザ（`client/app.ts`） | `tsc` で `public/app.js` に**コンパイル**して配信 | `tsconfig.client.json` | DOM（ブラウザ API） |
+
+- **なぜ `tsx`？**: 学習中はビルド手順を挟まず「保存したらすぐ実行」できる方が読み・試しやすいからです。型チェックは `npm run typecheck` で別途行えます。
+- **なぜブラウザだけコンパイル？**: ブラウザは `.ts` を直接実行できないため、`client/app.ts` を `public/app.js` に変換する必要があります。`npm run dev` はこのコンパイルを自動で行います。
+- **`client/` と `public/` の分担**: `client/app.ts` が**ソース**、`public/` が**配信用フォルダ**（`index.html` / `styles.css` と、生成された `app.js`）です。生成物の `public/app.js` は `.gitignore` 済みで、リポジトリには含めません（`npm run dev` で作られます）。
+- **型の共有**: サーバとクライアントがやり取りする JSON の形は `src/types.ts` に集約しています（`Suggestion` / `SuggestionsResponse` など）。クライアント側 (`client/app.ts`) は Node 型を持ち込まないよう、対応する型を小さく再宣言しています。
+
+---
+
 ## 実サービスとの対応
 
 この小さなプロジェクトは、大規模なオートコンプリートの主要な要素を縮小して並べています。
 
 | この教材 | 実サービスでの対応 |
 | --- | --- |
-| `src/trie.js`（Trie + topCandidates） | サジェスト用のインデックス／前計算済み候補（多くは分散インデックスやキャッシュ層） |
+| `src/trie.ts`（Trie + topCandidates） | サジェスト用のインデックス／前計算済み候補（多くは分散インデックスやキャッシュ層） |
 | `GET /api/suggest` / WebSocket | サジェスト API（HTTP/RPC、エッジでのキャッシュ） |
 | `data/click-logs.json` | 行動ログ収集基盤（ログ収集 → メッセージキュー → データレイク） |
-| `scripts/aggregate-clicks.js` | バッチ/ストリーム集計（人気度・CTR・時間減衰の計算） |
-| `scripts/rebuild-trie-data.js` → `words-updated.json` | インデックス再構築・デプロイ（新しい辞書を本番へ反映） |
+| `scripts/aggregate-clicks.ts` | バッチ/ストリーム集計（人気度・CTR・時間減衰の計算） |
+| `scripts/rebuild-trie-data.ts` → `words-updated.json` | インデックス再構築・デプロイ（新しい辞書を本番へ反映） |
 | `requestId` による stale 対策 | クライアント側の競合・順序制御 |
 | `200ms` デバウンス | リクエスト削減（負荷とコストの最適化） |
 
@@ -285,24 +313,29 @@ POST /api/click
 ```
 .
 ├── package.json
+├── tsconfig.json               # サーバ・スクリプト用の TS 設定（型チェック）
+├── tsconfig.client.json        # ブラウザ用の TS 設定（app.js を生成）
 ├── README.md
 ├── data/
 │   ├── words.json              # 元の単語辞書（term, score）
 │   ├── click-logs.json         # クリックログ（行動ログ）
 │   ├── aggregated-scores.json  # 集計結果（aggregate で生成）
 │   └── words-updated.json      # 反映後の辞書（rebuild で生成）
+├── client/
+│   └── app.ts                  # フロントのロジック（debounce/通信/描画）のソース
 ├── public/
 │   ├── index.html              # 画面
 │   ├── styles.css              # スタイル
-│   └── app.js                  # フロントのロジック（debounce/通信/描画）
+│   └── app.js                  # ← client/app.ts から生成（.gitignore 済み）
 ├── src/
-│   ├── server.js               # Express + WebSocket サーバ
-│   ├── trie.js                 # Trie 検索エンジン（自前実装）
-│   ├── suggestionService.js    # 辞書読み込み + Trie 構築 + 検索の入口
-│   └── logService.js           # クリックログの読み書き
+│   ├── server.ts               # Express + WebSocket サーバ
+│   ├── trie.ts                 # Trie 検索エンジン（自前実装）
+│   ├── suggestionService.ts    # 辞書読み込み + Trie 構築 + 検索の入口
+│   ├── logService.ts           # クリックログの読み書き
+│   └── types.ts                # 共有する型定義
 └── scripts/
-    ├── aggregate-clicks.js     # ログ集計
-    └── rebuild-trie-data.js    # 辞書再構築
+    ├── aggregate-clicks.ts     # ログ集計
+    └── rebuild-trie-data.ts    # 辞書再構築
 ```
 
 ---
@@ -311,10 +344,11 @@ POST /api/click
 
 理解しやすい順序です。
 
-1. **`src/trie.js`** … 検索の心臓部。Trie とは何か、なぜ速いかをコメント付きで。
-2. **`src/suggestionService.js`** … 辞書を読んで Trie を作り、`getSuggestions()` に集約する流れ。
-3. **`src/server.js`** … AJAX / WebSocket / クリックログの 3 入口が、同じ検索につながる様子。
-4. **`public/app.js`** … debounce、モード切替、`requestId` による stale 対策、クリックログ送信。
-5. **`scripts/aggregate-clicks.js` → `scripts/rebuild-trie-data.js`** … ログ→集計→辞書反映のデータパイプライン。
+1. **`src/types.ts`** … まず登場するデータの「形（型）」を眺めておくと、以降が読みやすい。
+2. **`src/trie.ts`** … 検索の心臓部。Trie とは何か、なぜ速いかをコメント付きで。
+3. **`src/suggestionService.ts`** … 辞書を読んで Trie を作り、`getSuggestions()` に集約する流れ。
+4. **`src/server.ts`** … AJAX / WebSocket / クリックログの 3 入口が、同じ検索につながる様子。
+5. **`client/app.ts`** … debounce、モード切替、`requestId` による stale 対策、クリックログ送信。
+6. **`scripts/aggregate-clicks.ts` → `scripts/rebuild-trie-data.ts`** … ログ→集計→辞書反映のデータパイプライン。
 
 楽しんで読んでみてください！
