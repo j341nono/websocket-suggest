@@ -1,0 +1,25 @@
+{
+  // =========================================================================
+  //  tsconfig.client.json ― ブラウザ用コード（client/app.ts）専用の設定
+  //
+  //  ブラウザは TypeScript を直接実行できないので、ここで client/app.ts を
+  //  public/app.js にコンパイルします（npm run build:client）。
+  //  サーバ側とは違い、Node ではなく DOM（document など）の型を使います。
+  // =========================================================================
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ES2020",
+    "moduleResolution": "bundler",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"], // ブラウザ API の型
+    "types": [], // Node の型は持ち込まない
+
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    "rootDir": "client",
+    "outDir": "public", // client/app.ts -> public/app.js に出力
+    "noEmit": false
+  },
+  "include": ["client/**/*.ts"]
+}

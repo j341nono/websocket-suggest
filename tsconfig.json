@@ -1,0 +1,24 @@
+{
+  // =========================================================================
+  //  tsconfig.json ― バックエンド（src/）とスクリプト（scripts/）用の設定
+  //
+  //  このプロジェクトは tsx で .ts を直接実行するため、ここでは「型チェック」と
+  //  「エディタ補完」が主目的です（noEmit: true ＝ JS ファイルは出力しない）。
+  //  ブラウザ用コードは別ファイル tsconfig.client.json でコンパイルします。
+  // =========================================================================
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler", // 拡張子なし import を許可（読みやすさ優先）
+    "lib": ["ES2022"],
+    "types": ["node"], // Node.js の型だけを使う（DOM は使わない）
+
+    "strict": true, // 厳密な型チェック（学習向けにあえて厳しく）
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    "noEmit": true // 実行は tsx に任せるので JS は出力しない
+  },
+  "include": ["src", "scripts"]
+}

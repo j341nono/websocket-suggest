@@ -1,13 +1,15 @@
 {
   "name": "mini-suggest-lab",
   "version": "1.0.0",
-  "description": "AJAX と WebSocket の autocomplete を同じバックエンドで比較する学習用プロジェクト",
+  "description": "AJAX と WebSocket の autocomplete を同じバックエンドで比較する学習用プロジェクト（TypeScript 版）",
   "type": "module",
   "scripts": {
-    "dev": "node src/server.js",
-    "start": "node src/server.js",
-    "aggregate": "node scripts/aggregate-clicks.js",
-    "rebuild": "node scripts/rebuild-trie-data.js"
+    "dev": "npm run build:client && tsx src/server.ts",
+    "start": "npm run build:client && tsx src/server.ts",
+    "build:client": "tsc -p tsconfig.client.json",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
+    "aggregate": "tsx scripts/aggregate-clicks.ts",
+    "rebuild": "tsx scripts/rebuild-trie-data.ts"
   },
   "engines": {
     "node": ">=18"
@@ -15,5 +17,12 @@
   "dependencies": {
     "express": "^4.21.2",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.5",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
   }
 }
