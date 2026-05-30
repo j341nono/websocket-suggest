@@ -1,0 +1,44 @@
+[
+  {
+    "term": "tokyo",
+    "clicks": 3,
+    "baseScore": 100,
+    "newScore": 103
+  },
+  {
+    "term": "typescript",
+    "clicks": 3,
+    "baseScore": 95,
+    "newScore": 98
+  },
+  {
+    "term": "javascript",
+    "clicks": 2,
+    "baseScore": 98,
+    "newScore": 100
+  },
+  {
+    "term": "websocket",
+    "clicks": 2,
+    "baseScore": 92,
+    "newScore": 94
+  },
+  {
+    "term": "react",
+    "clicks": 2,
+    "baseScore": 94,
+    "newScore": 96
+  },
+  {
+    "term": "tokyo station",
+    "clicks": 1,
+    "baseScore": 90,
+    "newScore": 91
+  },
+  {
+    "term": "python",
+    "clicks": 1,
+    "baseScore": 96,
+    "newScore": 97
+  }
+]

@@ -1,0 +1,250 @@
+[
+  {
+    "term": "tokyo",
+    "score": 103
+  },
+  {
+    "term": "javascript",
+    "score": 100
+  },
+  {
+    "term": "typescript",
+    "score": 98
+  },
+  {
+    "term": "python",
+    "score": 97
+  },
+  {
+    "term": "react",
+    "score": 96
+  },
+  {
+    "term": "websocket",
+    "score": 94
+  },
+  {
+    "term": "tokyo station",
+    "score": 91
+  },
+  {
+    "term": "git",
+    "score": 91
+  },
+  {
+    "term": "node js",
+    "score": 90
+  },
+  {
+    "term": "japan",
+    "score": 88
+  },
+  {
+    "term": "docker",
+    "score": 88
+  },
+  {
+    "term": "machine learning",
+    "score": 86
+  },
+  {
+    "term": "java",
+    "score": 85
+  },
+  {
+    "term": "github",
+    "score": 84
+  },
+  {
+    "term": "rust",
+    "score": 82
+  },
+  {
+    "term": "kubernetes",
+    "score": 82
+  },
+  {
+    "term": "toyota",
+    "score": 80
+  },
+  {
+    "term": "graphql",
+    "score": 80
+  },
+  {
+    "term": "nextjs",
+    "score": 78
+  },
+  {
+    "term": "golang",
+    "score": 78
+  },
+  {
+    "term": "mysql",
+    "score": 76
+  },
+  {
+    "term": "database",
+    "score": 75
+  },
+  {
+    "term": "react native",
+    "score": 74
+  },
+  {
+    "term": "mongodb",
+    "score": 74
+  },
+  {
+    "term": "tokyo tower",
+    "score": 72
+  },
+  {
+    "term": "redis",
+    "score": 72
+  },
+  {
+    "term": "swift",
+    "score": 72
+  },
+  {
+    "term": "pytorch",
+    "score": 70
+  },
+  {
+    "term": "sql",
+    "score": 70
+  },
+  {
+    "term": "trie data structure",
+    "score": 70
+  },
+  {
+    "term": "django",
+    "score": 68
+  },
+  {
+    "term": "kafka",
+    "score": 66
+  },
+  {
+    "term": "algorithm",
+    "score": 65
+  },
+  {
+    "term": "tokyo skytree",
+    "score": 64
+  },
+  {
+    "term": "kotlin",
+    "score": 64
+  },
+  {
+    "term": "svelte",
+    "score": 63
+  },
+  {
+    "term": "nginx",
+    "score": 62
+  },
+  {
+    "term": "microservices",
+    "score": 61
+  },
+  {
+    "term": "redux",
+    "score": 60
+  },
+  {
+    "term": "data structure",
+    "score": 60
+  },
+  {
+    "term": "search engine",
+    "score": 60
+  },
+  {
+    "term": "autocomplete",
+    "score": 60
+  },
+  {
+    "term": "numpy",
+    "score": 58
+  },
+  {
+    "term": "web development",
+    "score": 58
+  },
+  {
+    "term": "rest api",
+    "score": 56
+  },
+  {
+    "term": "toronto",
+    "score": 55
+  },
+  {
+    "term": "npm",
+    "score": 54
+  },
+  {
+    "term": "webpack",
+    "score": 52
+  },
+  {
+    "term": "nestjs",
+    "score": 50
+  },
+  {
+    "term": "type",
+    "score": 48
+  },
+  {
+    "term": "webassembly",
+    "score": 47
+  },
+  {
+    "term": "dynamodb",
+    "score": 46
+  },
+  {
+    "term": "sqlite",
+    "score": 45
+  },
+  {
+    "term": "pydantic",
+    "score": 44
+  },
+  {
+    "term": "typeorm",
+    "score": 42
+  },
+  {
+    "term": "pypi",
+    "score": 40
+  },
+  {
+    "term": "keras",
+    "score": 40
+  },
+  {
+    "term": "jakarta",
+    "score": 38
+  },
+  {
+    "term": "gradle",
+    "score": 36
+  },
+  {
+    "term": "total",
+    "score": 35
+  },
+  {
+    "term": "jamstack",
+    "score": 33
+  },
+  {
+    "term": "typing",
+    "score": 30
+  }
+]
