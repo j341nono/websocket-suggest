@@ -1,5 +1,5 @@
 // =============================================================================
-//  src/logService.js  ―  クリックログの読み書き
+//  src/logService.ts  ―  クリックログの読み書き
 // =============================================================================
 //
 //  ユーザーが候補をクリックしたら、その事実を data/click-logs.json に
@@ -16,21 +16,32 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { ClickLogEntry } from './types';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLICK_LOG_PATH = path.join(__dirname, '..', 'data', 'click-logs.json');
 
 /**
+ * クリックログとして受け取る入力。
+ * クライアントから来るので「何が入っているか分からない」前提で unknown にし、
+ * appendClickLog の中で検証・整形する。
+ */
+export interface ClickLogInput {
+  term?: unknown;
+  query?: unknown;
+  transport?: unknown;
+}
+
+/**
  * 既存のクリックログを読み込む。
  * ファイルが無い・JSON が壊れている場合は「空ログ」として扱う（落とさない）。
- * @returns {Promise<Array>}
  */
-export async function readClickLogs() {
+export async function readClickLogs(): Promise<ClickLogEntry[]> {
   try {
     const raw = await readFile(CLICK_LOG_PATH, 'utf-8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as ClickLogEntry[]) : [];
+  } catch {
     // ファイル未作成や JSON 破損は、空配列スタートとして扱う
     return [];
   }
@@ -39,18 +50,17 @@ export async function readClickLogs() {
 /**
  * クリックログを1件追記する。
  *
- * @param {{term?: string, query?: string, transport?: string}} entry
- * @returns {Promise<object>} 実際に保存したログ1件
+ * @returns 実際に保存したログ1件
  */
-export async function appendClickLog(entry) {
+export async function appendClickLog(entry: ClickLogInput): Promise<ClickLogEntry> {
   // --- 入力検証：term は必須 ---
-  const term = typeof entry?.term === 'string' ? entry.term.trim() : '';
+  const term = typeof entry.term === 'string' ? entry.term.trim() : '';
   if (term === '') {
     throw new Error('クリックログには term が必要です');
   }
 
   // 保存する形に整える（不正な transport は http に寄せる）
-  const logEntry = {
+  const logEntry: ClickLogEntry = {
     term,
     query: typeof entry.query === 'string' ? entry.query : '',
     transport: entry.transport === 'websocket' ? 'websocket' : 'http',
